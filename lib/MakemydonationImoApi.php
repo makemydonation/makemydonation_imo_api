@@ -18,6 +18,12 @@ abstract class MakemydonationImoApi
     // Make My Donation account API Key.
     private $auth_api_key;
 
+    // API Request response body.
+    private $responseBody;
+
+    // API Request response code.
+    private $responseCode;
+
     public function __construct()
     {
         $this->base_url = $this->base_url_live;
@@ -51,12 +57,18 @@ abstract class MakemydonationImoApi
         $this->base_url = $this->base_url_live;
     }
 
+    /**
+     * Wrapper to do the request.
+     */
     protected function request($method, $path, $data = NULL)
     {
         $url = $this->base_url;
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "$url/$path");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_VERBOSE, TRUE);
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
         curl_setopt($ch, CURLOPT_USERPWD, "{$this->auth_username}:{$this->auth_api_key}");
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -78,29 +90,40 @@ abstract class MakemydonationImoApi
             $json = json_encode($data);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
         }
-        $this->response = curl_exec($ch);
+        $response = curl_exec($ch);
 
-        return $this->response;
+        $info = curl_getinfo($ch);
+        $this->responseCode = $info['http_code'];
+        $header_size = $info['header_size'];
+        $this->responseBody = substr($response, $header_size);
+        curl_close($ch);
     }
 
+    /**
+     * Get the response HTTP code.
+     */
     public function responseCode()
     {
-        return $this->response->getStatusCode();
+        return $this->responseCode;
     }
 
+    /**
+     * Get the response body.
+     */
     public function responseBody()
     {
-        return $this->response->getBody();
+        return $this->responseBody;
     }
 
-    public function responseJson()
+    /**
+     * Get the parsed response code.
+     */
+    public function response()
     {
-        $json = json_decode($this->responseBody());
+        $body = $this->responseBody();
 
-        if (!is_object($json)) {
-            $json = (object) array();
-        }
+        $response = json_decode($body);
 
-        return $json;
+        return $response;
     }
 }
