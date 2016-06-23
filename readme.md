@@ -72,7 +72,7 @@ $case->useSandbox();
 $case->update($case->id, $case);
 $case_updated = $case->response();
 
-var_dump($funeral_home_updated);
+var_dump($case_updated);
 
 // Create a new funeral home case.
 $case_new_data = array(
